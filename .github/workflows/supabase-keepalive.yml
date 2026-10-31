@@ -1,1 +1,42 @@
+name: Supabase Keep Alive
 
+"on":
+  schedule:
+    - cron: '17 3 * * *'
+    - cron: '17 11 * * *'
+    - cron: '17 19 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Keep Supabase Active
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const config = fs.readFileSync('config.js', 'utf8');
+
+          const url = config.match(/SUPABASE_URL\s*:\s*["']([^"']+)["']/)?.[1];
+          const key = config.match(/SUPABASE_ANON_KEY\s*:\s*["']([^"']+)["']/)?.[1];
+
+          if (!url || !key) throw new Error('Supabase config missing');
+
+          fetch(`${url}/rest/v1/products?select=id&limit=1`, {
+            headers: {
+              apikey: key,
+              Authorization: `Bearer ${key}`
+            }
+          }).then(async r => {
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            console.log('Supabase Keep Alive Success');
+          }).catch(e => {
+            console.error(e);
+            process.exit(1);
+          });
+          NODE

@@ -1,6 +1,6 @@
 name: Supabase Keep Alive
 
-on:
+"on":
   schedule:
     - cron: '17 3 * * *'
     - cron: '17 11 * * *'

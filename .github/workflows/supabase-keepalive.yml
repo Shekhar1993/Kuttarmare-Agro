@@ -1,8 +1,8 @@
 name: Supabase Keep Alive
 
-"on":
+on:
   schedule:
-    - cron: '17 3 * * *'
+    - cron: '17 3,11,19 * * *'
   workflow_dispatch:
 
 permissions:
@@ -11,13 +11,11 @@ permissions:
 jobs:
   keep-alive:
     runs-on: ubuntu-latest
-    timeout-minutes: 2
-
     steps:
       - name: Check out website files
         uses: actions/checkout@v4
 
-      - name: Send a read-only request to Supabase
+      - name: Keep Supabase Active
         run: |
           node <<'NODE'
           const fs = require('fs');
@@ -27,8 +25,7 @@ jobs:
           const keyMatch = config.match(/SUPABASE_ANON_KEY\s*:\s*["']([^"']+)["']/);
 
           if (!urlMatch || !keyMatch) {
-            console.error('Could not read Supabase configuration');
-            process.exit(1);
+            throw new Error('Supabase configuration missing');
           }
 
           const url = urlMatch[1].replace(/\/$/, '');
@@ -41,11 +38,11 @@ jobs:
             }
           }).then(async response => {
             if (!response.ok) {
-              throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+              throw new Error(`HTTP ${response.status}`);
             }
-            console.log('Supabase keep-alive successful.');
+            console.log('Supabase request successful');
           }).catch(error => {
-            console.error(error.message);
+            console.error(error);
             process.exit(1);
           });
           NODE
